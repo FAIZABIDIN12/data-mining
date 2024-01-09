@@ -5,6 +5,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
 from io import BytesIO, StringIO
+from collections import Counter
 import os
 
 app = Flask(__name__)
@@ -78,41 +79,40 @@ def analyze(file_id):
         return render_template('index.html', error='File not found.')
 
     try:
-        # Periksa apakah konten merupakan byte atau string
         if isinstance(uploaded_file.content, bytes):
-            # Gunakan BytesIO jika konten merupakan bytes
             df = pd.read_csv(BytesIO(uploaded_file.content))
         else:
-            # Jika konten merupakan string, tidak perlu menggunakan BytesIO
             df = pd.read_csv(StringIO(uploaded_file.content))
 
-        # Pernyataan cetak untuk mengecek konten DataFrame
         print(df.head())
 
-        # Periksa apakah DataFrame memiliki data
         if df.empty:
-            return render_template('index.html', error='DataFrame kosong setelah membaca berkas')
+            return render_template('index.html', error='DataFrame is empty after reading the file')
 
     except pd.errors.EmptyDataError:
-        return render_template('index.html', error='DataFrame kosong setelah membaca berkas')
+        return render_template('index.html', error='DataFrame is empty after reading the file')
     except Exception as e:
         return render_template('index.html', error=f'Error: {str(e)}')
 
-    # Melanjutkan dengan analisis jika tidak ada kesalahan
     texts = df['ulasan'].values
     labels = df['label'].values
 
-    # Training model Naive Bayes
     model = train_naive_bayes(texts, labels)
 
-    # Prediksi sentimen
+    # Predict sentiment
     predictions = predict_sentiment(model, texts)
 
-    # Menambahkan prediksi ke DataFrame
+    # Add predictions to DataFrame
     df['predicted_sentiment'] = predictions
 
-    # Render template dengan DataFrame
-    return render_template('index.html', file_content=df.to_dict(orient='records'), show_button=True)
+    # Count positive and negative predictions
+    sentiment_counts = Counter(predictions)
+    positive_count = sentiment_counts.get('positif', 0)
+    negative_count = sentiment_counts.get('negatif', 0)
+
+    # Render template with DataFrame and counts
+    return render_template('index.html', file_content=df.to_dict(orient='records'), show_button=True,
+                           positive_count=positive_count, negative_count=negative_count)
 
 # fungsi delete
 @app.route('/delete_file/<int:file_id>', methods=['GET'])
@@ -134,4 +134,4 @@ def delete_file(file_id):
         return render_template('index.html', error=f'Error: {str(e)}')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8001)
